@@ -178,7 +178,10 @@ function rules(focus, fromQ) {
 }
 
 function vocabHtml(u) {
-  return u.vocab.map(v => '<div class="vocab"><b>' + esc(v.w) + '</b><span class="y">' + esc(v.yomi) + '</span><br>' + esc(v.mean) + '<br><span class="sub">例：' + esc(v.ex) + '</span></div>').join('');
+  const rev = (u.review && u.review.length)
+    ? '<h2 style="margin-top:12px">🔁 復習ことば（前に出たことば）</h2>' + u.review.map(r => '<div class="vocab"><b>' + esc(r.w) + '</b><span class="y">' + esc(r.yomi) + '</span><br>' + esc(r.mean) + '</div>').join('')
+    : '';
+  return u.vocab.map(v => '<div class="vocab"><b>' + esc(v.w) + '</b><span class="y">' + esc(v.yomi) + '</span><br>' + esc(v.mean) + '<br><span class="sub">例：' + esc(v.ex) + '</span></div>').join('') + rev;
 }
 
 function finish() {
