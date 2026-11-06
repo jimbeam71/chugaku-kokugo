@@ -76,7 +76,7 @@ function fmt(s) { return esc(s).replace(/【(.+?)】/g, '<u class="kw">$1</u>');
 function shuffle(n) { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 let DATA = null, LEV = [], RULES = [], cur = 0, filter = '全部';
-const LV_NAMES = ['レベル0　ことばの力', 'レベル1　1文を読む', 'レベル2　2文を読む'];
+const LV_NAMES = ['レベル0　ことばの力', 'レベル1　1文を読む', 'レベル2　2文を読む', 'レベル3　まとめと具体'];
 const app = document.getElementById('app');
 
 function streakHtml() {
@@ -254,7 +254,7 @@ function review() {
   window.scrollTo(0, 0);
 }
 
-Promise.all(['data/level0.json', 'data/level1.json', 'data/level2.json'].map(f => fetch(f).then(r => r.json())))
+Promise.all(['data/level0.json', 'data/level1.json', 'data/level2.json', 'data/level3.json'].map(f => fetch(f).then(r => r.json())))
   .then(ls => { LEV = ls; RULES = ls[0].rules; DATA = LEV[cur]; home(); })
   .catch(() => { app.textContent = 'データを読みこめませんでした。'; });
 </script>
