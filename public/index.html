@@ -82,12 +82,12 @@ function home() {
   const tags = ['全部', '社会常識', '理科', '社会'];
   let h = '<h1>中学国語　ことばの力</h1><div class="sub">' + esc(DATA.title) + '　1回3分。文章を読んで、ことばと読み取りの力をつけよう。</div>' + streakHtml();
   h += '<button class="unit" id="rules" style="border:2px solid #ed8936;background:#fff8ee"><span><span class="t">📖 ことばのルール（最初に読もう）</span><br><span class="sub">「なぜ→〜から」「何ですか→〜こと」など、答えの終わり方</span></span></button>';
-  h += '<button class="unit" id="rv" style="background:#eef2fb"><span><span class="t">👩‍🏫 先生用：一覧で確認</span><br><span class="sub">問題を解かずに、全問の文章・答え・解説をざっと見られます</span></span></button>';
   h += '<div class="tags">' + tags.map(t => '<button class="tag' + (t === filter ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
   DATA.units.filter(u => filter === '全部' || u.tag === filter).forEach(u => {
     const d = done[u.id];
     h += '<button class="unit" data-id="' + u.id + '"><span><span class="badge ' + u.tag + '">' + u.tag + '</span><span class="t">' + esc(u.title) + '</span></span><span class="done">' + (d !== undefined ? '✔ ' + d + '/' + u.questions.length : '') + '</span></button>';
   });
+  h += '<div class="nav"><button class="btn line" id="rv">一覧で確認（全問の答えを見る）</button></div>';
   app.innerHTML = h;
   app.querySelectorAll('.tag').forEach(b => b.onclick = () => { filter = b.dataset.tag; home(); });
   app.querySelectorAll('.unit[data-id]').forEach(b => b.onclick = () => startUnit(b.dataset.id));
