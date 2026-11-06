@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>中学国語　ことばの力</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--ink:#222;--sub:#667;--main:#2b6cb0;--ok:#2f855a;--ng:#c53030;--line:#e2ddd0;--kw:#fff3bf}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;font-size:17px;line-height:1.8}
+#app{max-width:720px;margin:0 auto;padding:12px 14px 60px}
+h1{font-size:22px;margin:8px 0 2px}
+h2{font-size:18px;margin:0 0 6px}
+.sub{color:var(--sub);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0}
+.streak{background:#fff7e0;border:1px solid #f1d98a;border-radius:12px;padding:8px 14px;margin:10px 0;font-weight:bold}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.tag{border:1px solid var(--main);background:#fff;color:var(--main);border-radius:20px;padding:4px 14px;font-size:15px;cursor:pointer}
+.tag.on{background:var(--main);color:#fff}
+button{font:inherit;cursor:pointer}
+.unit{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0}
+.unit .t{font-weight:bold}
+.badge{display:inline-block;font-size:12px;border-radius:10px;padding:0 8px;background:#e6eefb;color:var(--main);margin-right:6px}
+.badge.理科{background:#e3f5ea;color:var(--ok)}
+.badge.社会{background:#fdecd9;color:#b7570f}
+.done{color:var(--ok);font-size:14px;white-space:nowrap}
+.btn{background:var(--main);color:#fff;border:0;border-radius:10px;padding:10px 18px;margin:6px 6px 0 0}
+.btn.line{background:#fff;color:var(--main);border:1px solid var(--main)}
+.text{font-size:18px;line-height:2}
+u.kw{text-decoration:none;background:var(--kw);border-bottom:2px solid #e6b800;padding:0 2px;font-weight:bold}
+.kind{font-size:13px;color:#fff;background:var(--main);border-radius:6px;padding:1px 8px;margin-right:6px}
+.choice{display:block;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;line-height:1.6}
+.choice.right{border-color:var(--ok);background:#e9f7ef}
+.choice.wrong{border-color:var(--ng);background:#fdeeee}
+.choice:disabled{cursor:default;color:var(--ink)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:10px;background:#f1f5fb}
+.fb.ok b{color:var(--ok)}
+.fb.ng b{color:var(--ng)}
+.para{margin-top:6px;font-size:15px;background:#fff8e6;border-radius:8px;padding:6px 10px}
+.vocab{border-top:1px dashed var(--line);padding:8px 0}
+.vocab b{font-size:19px}
+.vocab .y{color:var(--sub);font-size:14px;margin-left:6px}
+.rv .choice{margin:4px 0;padding:6px 10px;font-size:15px}
+.pt{background:#eef7ee;border-radius:10px;padding:10px 12px;margin-top:10px}
+.lk{background:#eef2fb;border-radius:10px;padding:10px 12px;margin-top:10px}
+.nav{margin:6px 0}
+a.back{color:var(--main);cursor:pointer;font-size:15px}
+</style>
+</head>
+<body>
+<div id="app">読みこみ中…</div>
+<script>
+const LS_DAYS = 'kokugo_days', LS_DONE = 'kokugo_done';
+function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function markToday() { const days = load(LS_DAYS, []); const t = ymd(new Date()); if (!days.includes(t)) { days.push(t); save(LS_DAYS, days); } }
+function streak() {
+  const days = new Set(load(LS_DAYS, []));
+  const d = new Date();
+  if (!days.has(ymd(d))) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (days.has(ymd(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function fmt(s) { return esc(s).replace(/【(.+?)】/g, '<u class="kw">$1</u>'); }
+function shuffle(n) { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+let DATA = null, filter = '全部';
+const app = document.getElementById('app');
+
+function streakHtml() {
+  const n = streak();
+  return '<div class="streak">' + (n >= 1 ? '🔥 ' + n + '日連続で頑張ってるよ！' : '🔥 今日から、1日ひとつずつやってみよう！') + '</div>';
+}
+
+function home() {
+  const done = load(LS_DONE, {});
+  const tags = ['全部', '社会常識', '理科', '社会'];
+  let h = '<h1>中学国語　ことばの力</h1><div class="sub">' + esc(DATA.title) + '　1回3分。文章を読んで、ことばと読み取りの力をつけよう。</div>' + streakHtml();
+  h += '<div class="tags">' + tags.map(t => '<button class="tag' + (t === filter ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
+  DATA.units.filter(u => filter === '全部' || u.tag === filter).forEach(u => {
+    const d = done[u.id];
+    h += '<button class="unit" data-id="' + u.id + '"><span><span class="badge ' + u.tag + '">' + u.tag + '</span><span class="t">' + esc(u.title) + '</span></span><span class="done">' + (d !== undefined ? '✔ ' + d + '/' + u.questions.length : '') + '</span></button>';
+  });
+  h += '<div class="nav"><button class="btn line" id="rv">一覧で確認（全問の答えを見る）</button></div>';
+  app.innerHTML = h;
+  app.querySelectorAll('.tag').forEach(b => b.onclick = () => { filter = b.dataset.tag; home(); });
+  app.querySelectorAll('.unit').forEach(b => b.onclick = () => startUnit(b.dataset.id));
+  document.getElementById('rv').onclick = review;
+  window.scrollTo(0, 0);
+}
+
+let S = null;
+function startUnit(id) {
+  const u = DATA.units.find(x => x.id === id);
+  S = { u, qi: 0, score: 0, answered: false };
+  question();
+}
+
+function head(u) {
+  return '<div class="nav"><a class="back" id="bk">← もどる</a></div><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(u.title) + '</h2>' +
+    '<div class="card text">' + fmt(u.text) + '</div>';
+}
+
+function question() {
+  const { u, qi } = S;
+  const q = u.questions[qi];
+  S.order = shuffle(q.choices.length);
+  S.answered = false;
+  let h = head(u);
+  h += '<div class="card"><div class="sub">' + (qi + 1) + ' / ' + u.questions.length + '</div>';
+  h += '<p><span class="kind">' + esc(q.kind) + '</span>' + esc(q.q) + '</p><div id="cs">';
+  S.order.forEach((oi, k) => { h += '<button class="choice" data-k="' + k + '">' + esc(q.choices[oi]) + '</button>'; });
+  h += '</div><div id="fb"></div></div>';
+  app.innerHTML = h;
+  document.getElementById('bk').onclick = home;
+  app.querySelectorAll('.choice').forEach(b => b.onclick = () => answer(+b.dataset.k));
+  window.scrollTo(0, 0);
+}
+
+function answer(k) {
+  if (S.answered) return;
+  S.answered = true;
+  markToday();
+  const q = S.u.questions[S.qi];
+  const picked = S.order[k];
+  const ok = picked === q.ans;
+  if (ok) S.score++;
+  app.querySelectorAll('.choice').forEach((b, i) => {
+    b.disabled = true;
+    if (S.order[i] === q.ans) b.classList.add('right');
+    else if (i === k) b.classList.add('wrong');
+  });
+  let f = '<div class="fb ' + (ok ? 'ok' : 'ng') + '"><b>' + (ok ? '○ 正解！' : '× ざんねん') + '</b><br>' + esc(q.exp);
+  if (q.para && q.para.length) {
+    f += '<div class="para">💡 言いかえに注目：' + q.para.map(p => '本文の「' + esc(p[0]) + '」→「' + esc(p[1]) + '」').join('、') + '</div>';
+  }
+  f += '</div>';
+  const last = S.qi === S.u.questions.length - 1;
+  f += '<button class="btn" id="nx">' + (last ? '結果と解説を見る' : '次の問題へ') + '</button>';
+  document.getElementById('fb').innerHTML = f;
+  document.getElementById('nx').onclick = () => { if (last) finish(); else { S.qi++; question(); } };
+}
+
+function vocabHtml(u) {
+  return u.vocab.map(v => '<div class="vocab"><b>' + esc(v.w) + '</b><span class="y">' + esc(v.yomi) + '</span><br>' + esc(v.mean) + '<br><span class="sub">例：' + esc(v.ex) + '</span></div>').join('');
+}
+
+function finish() {
+  const { u, score } = S;
+  const done = load(LS_DONE, {});
+  if (done[u.id] === undefined || score > done[u.id]) done[u.id] = score;
+  save(LS_DONE, done);
+  markToday();
+  let h = head(u);
+  h += '<div class="card"><h2>結果：' + score + ' / ' + u.questions.length + '</h2>';
+  h += '<h2 style="margin-top:12px">ことばカード</h2>' + vocabHtml(u);
+  h += '<div class="pt">📌 ' + esc(u.point) + '</div><div class="lk">📚 ' + esc(u.link) + '</div></div>';
+  h += '<button class="btn" id="again">もう一度</button><button class="btn line" id="hm">一覧にもどる</button>';
+  app.innerHTML = h;
+  document.getElementById('bk').onclick = home;
+  document.getElementById('hm').onclick = home;
+  document.getElementById('again').onclick = () => startUnit(u.id);
+  window.scrollTo(0, 0);
+}
+
+function review() {
+  let h = '<div class="nav"><a class="back" id="bk">← もどる</a></div><h1>一覧で確認</h1><div class="sub">全ユニットの文章・問題・答え・解説をまとめて見られます（○がついた選択肢が正解）。</div>';
+  DATA.units.forEach(u => {
+    h += '<div class="card rv"><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(u.id) + '　' + esc(u.title) + '</h2>';
+    h += '<div class="text" style="font-size:16px;line-height:1.9;margin:8px 0">' + fmt(u.text) + '</div>';
+    u.questions.forEach((q, i) => {
+      h += '<p style="margin:10px 0 2px"><span class="kind">' + esc(q.kind) + '</span>' + (i + 1) + '. ' + esc(q.q) + '</p>';
+      q.choices.forEach((c, j) => { h += '<div class="choice' + (j === q.ans ? ' right' : '') + '">' + (j === q.ans ? '○ ' : '') + esc(c) + '</div>'; });
+      h += '<div class="sub">' + esc(q.exp) + '</div>';
+      if (q.para && q.para.length) h += '<div class="para">💡 ' + q.para.map(p => '「' + esc(p[0]) + '」→「' + esc(p[1]) + '」').join('、') + '</div>';
+    });
+    h += '<h2 style="margin-top:12px">ことばカード</h2>' + vocabHtml(u);
+    h += '<div class="pt">📌 ' + esc(u.point) + '</div><div class="lk">📚 ' + esc(u.link) + '</div></div>';
+  });
+  app.innerHTML = h;
+  document.getElementById('bk').onclick = home;
+  window.scrollTo(0, 0);
+}
+
+fetch('data/level0.json').then(r => r.json()).then(d => { DATA = d; home(); }).catch(() => { app.textContent = 'データを読みこめませんでした。'; });
+</script>
+</body>
+</html>
