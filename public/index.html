@@ -25,6 +25,7 @@ button{font:inherit;cursor:pointer}
 .badge.社会{background:#fdecd9;color:#b7570f}
 .done{color:var(--ok);font-size:14px;white-space:nowrap}
 .btn{background:var(--main);color:#fff;border:0;border-radius:10px;padding:10px 18px;margin:6px 6px 0 0}
+.btn.warn{background:#dd6b20}
 .btn.line{background:#fff;color:var(--main);border:1px solid var(--main)}
 .text{font-size:18px;line-height:2}
 u.kw{text-decoration:none;background:var(--kw);border-bottom:2px solid #e6b800;padding:0 2px;font-weight:bold}
@@ -80,6 +81,7 @@ function home() {
   const done = load(LS_DONE, {});
   const tags = ['全部', '社会常識', '理科', '社会'];
   let h = '<h1>中学国語　ことばの力</h1><div class="sub">' + esc(DATA.title) + '　1回3分。文章を読んで、ことばと読み取りの力をつけよう。</div>' + streakHtml();
+  h += '<button class="unit" id="rules" style="border:2px solid #ed8936;background:#fff8ee"><span><span class="t">📖 ことばのルール（最初に読もう）</span><br><span class="sub">「なぜ→〜から」「何ですか→〜こと」など、答えの終わり方</span></span></button>';
   h += '<div class="tags">' + tags.map(t => '<button class="tag' + (t === filter ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
   DATA.units.filter(u => filter === '全部' || u.tag === filter).forEach(u => {
     const d = done[u.id];
@@ -88,7 +90,8 @@ function home() {
   h += '<div class="nav"><button class="btn line" id="rv">一覧で確認（全問の答えを見る）</button></div>';
   app.innerHTML = h;
   app.querySelectorAll('.tag').forEach(b => b.onclick = () => { filter = b.dataset.tag; home(); });
-  app.querySelectorAll('.unit').forEach(b => b.onclick = () => startUnit(b.dataset.id));
+  app.querySelectorAll('.unit[data-id]').forEach(b => b.onclick = () => startUnit(b.dataset.id));
+  document.getElementById('rules').onclick = () => rules(null, false);
   document.getElementById('rv').onclick = review;
   window.scrollTo(0, 0);
 }
@@ -105,11 +108,10 @@ function head(u) {
     '<div class="card text">' + fmt(u.text) + '</div>';
 }
 
-function question() {
+function question(keep) {
   const { u, qi } = S;
   const q = u.questions[qi];
-  S.order = shuffle(q.choices.length);
-  S.answered = false;
+  if (!keep) { S.order = shuffle(q.choices.length); S.answered = false; S.pick = null; }
   let h = head(u);
   h += '<div class="card"><div class="sub">' + (qi + 1) + ' / ' + u.questions.length + '</div>';
   h += '<p><span class="kind">' + esc(q.kind) + '</span>' + esc(q.q) + '</p>';
@@ -120,17 +122,22 @@ function question() {
   app.innerHTML = h;
   document.getElementById('bk').onclick = home;
   app.querySelectorAll('.choice').forEach(b => b.onclick = () => answer(+b.dataset.k));
-  window.scrollTo(0, 0);
+  if (keep && S.answered) paint(S.pick); else window.scrollTo(0, 0);
 }
 
 function answer(k) {
   if (S.answered) return;
   S.answered = true;
+  S.pick = k;
   markToday();
   const q = S.u.questions[S.qi];
-  const picked = S.order[k];
-  const ok = picked === q.ans;
-  if (ok) S.score++;
+  if (S.order[k] === q.ans) S.score++;
+  paint(k);
+}
+
+function paint(k) {
+  const q = S.u.questions[S.qi];
+  const ok = S.order[k] === q.ans;
   app.querySelectorAll('.choice').forEach((b, i) => {
     b.disabled = true;
     if (S.order[i] === q.ans) b.classList.add('right');
@@ -141,10 +148,33 @@ function answer(k) {
     f += '<div class="para">💡 言いかえに注目：' + q.para.map(p => '本文の「' + esc(p[0]) + '」→「' + esc(p[1]) + '」').join('、') + '</div>';
   }
   f += '</div>';
+  if (!ok && q.rule) f += '<button class="btn warn" id="rl">📖 ことばのルールを見て、もう一度たしかめる</button>';
   const last = S.qi === S.u.questions.length - 1;
   f += '<button class="btn" id="nx">' + (last ? '結果と解説を見る' : '次の問題へ') + '</button>';
   document.getElementById('fb').innerHTML = f;
   document.getElementById('nx').onclick = () => { if (last) finish(); else { S.qi++; question(); } };
+  const rl = document.getElementById('rl');
+  if (rl) rl.onclick = () => rules(q.rule, true);
+}
+
+function rules(focus, fromQ) {
+  let h = '<div class="nav"><a class="back" id="bk">' + (fromQ ? '← 問題にもどる' : '← もどる') + '</a></div>';
+  h += '<h1>📖 ことばのルール</h1><div class="sub">答えの「終わり方」には決まりがあります。問題を解く前に読んで、まちがえたらここにもどってこよう。</div>';
+  DATA.rules.forEach((r, i) => {
+    h += '<div class="card rule" id="r-' + r.id + '"><h2>' + (i + 1) + '. ' + esc(r.title) + '</h2>';
+    h += '<div class="sub">こんな問い：' + r.ask.map(esc).join('　／　') + '</div>';
+    h += '<div class="para" style="font-size:16px">答えの終わり方：<b>' + esc(r.end) + '</b></div>';
+    h += '<div class="fb ok" style="margin-top:8px"><b>○</b> ' + esc(r.ok) + '</div>';
+    r.ng.forEach(n => { h += '<div class="fb ng" style="margin-top:6px"><b>×</b> ' + esc(n) + '</div>'; });
+    h += '<div class="pt">💡 ' + esc(r.tip) + '</div></div>';
+  });
+  if (fromQ) h += '<button class="btn" id="bk2">問題にもどる</button>';
+  app.innerHTML = h;
+  const back = () => { if (fromQ) question(true); else home(); };
+  document.getElementById('bk').onclick = back;
+  const b2 = document.getElementById('bk2'); if (b2) b2.onclick = back;
+  const el = focus && document.getElementById('r-' + focus);
+  if (el) { el.style.outline = '3px solid #ed8936'; el.scrollIntoView(); } else window.scrollTo(0, 0);
 }
 
 function vocabHtml(u) {
