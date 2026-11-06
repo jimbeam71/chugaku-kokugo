@@ -88,7 +88,7 @@ function home() {
   DATA = LEV[cur];
   const done = load(LS_DONE, {});
   const tags = ['全部', '社会常識', '理科', '社会'];
-  let h = '<h1>中学国語　ことばの力</h1><div class="sub">' + esc(DATA.title) + '　1回3分。文章を読んで、ことばと読み取りの力をつけよう。</div>' + streakHtml();
+  let h = '<div class="nav"><a class="back" href="https://chugaku.senta1111.workers.dev/">← 中学自習サイトのトップへ</a></div><h1>中学国語　ことばの力</h1><div class="sub">' + esc(DATA.title) + '　1回3分。文章を読んで、ことばと読み取りの力をつけよう。</div>' + streakHtml();
   h += '<button class="unit" id="rules" style="border:2px solid #ed8936;background:#fff8ee"><span><span class="t">📖 ことばのルール（最初に読もう）</span><br><span class="sub">「なぜ→〜から」「何ですか→〜こと」など、答えの終わり方</span></span></button>';
   h += '<div class="tags">' + LEV.map((L, i) => '<button class="tag lv' + (i === cur ? ' on' : '') + '" data-lv="' + i + '">' + esc(LV_NAMES[i]) + '</button>').join('') + '</div>';
   h += '<div class="tags">' + tags.map(t => '<button class="tag' + (t === filter ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
