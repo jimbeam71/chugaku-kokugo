@@ -82,12 +82,12 @@ function home() {
   const tags = ['全部', '社会常識', '理科', '社会'];
   let h = '<h1>中学国語　ことばの力</h1><div class="sub">' + esc(DATA.title) + '　1回3分。文章を読んで、ことばと読み取りの力をつけよう。</div>' + streakHtml();
   h += '<button class="unit" id="rules" style="border:2px solid #ed8936;background:#fff8ee"><span><span class="t">📖 ことばのルール（最初に読もう）</span><br><span class="sub">「なぜ→〜から」「何ですか→〜こと」など、答えの終わり方</span></span></button>';
+  h += '<button class="unit" id="rv" style="background:#eef2fb"><span><span class="t">👩‍🏫 先生用：一覧で確認</span><br><span class="sub">問題を解かずに、全問の文章・答え・解説をざっと見られます</span></span></button>';
   h += '<div class="tags">' + tags.map(t => '<button class="tag' + (t === filter ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
   DATA.units.filter(u => filter === '全部' || u.tag === filter).forEach(u => {
     const d = done[u.id];
     h += '<button class="unit" data-id="' + u.id + '"><span><span class="badge ' + u.tag + '">' + u.tag + '</span><span class="t">' + esc(u.title) + '</span></span><span class="done">' + (d !== undefined ? '✔ ' + d + '/' + u.questions.length : '') + '</span></button>';
   });
-  h += '<div class="nav"><button class="btn line" id="rv">一覧で確認（全問の答えを見る）</button></div>';
   app.innerHTML = h;
   app.querySelectorAll('.tag').forEach(b => b.onclick = () => { filter = b.dataset.tag; home(); });
   app.querySelectorAll('.unit[data-id]').forEach(b => b.onclick = () => startUnit(b.dataset.id));
@@ -199,9 +199,12 @@ function finish() {
   window.scrollTo(0, 0);
 }
 
+let rvTag = '全部';
 function review() {
-  let h = '<div class="nav"><a class="back" id="bk">← もどる</a></div><h1>一覧で確認</h1><div class="sub">全ユニットの文章・問題・答え・解説をまとめて見られます（○がついた選択肢が正解）。</div>';
-  DATA.units.forEach(u => {
+  const units = DATA.units.filter(u => rvTag === '全部' || u.tag === rvTag);
+  let h = '<div class="nav"><a class="back" id="bk">← もどる</a></div><h1>👩‍🏫 一覧で確認（先生用）</h1><div class="sub">全ユニットの文章・問題・答え・解説をまとめて見られます（○がついた選択肢が正解）。いまの表示：' + units.length + 'ユニット／' + units.reduce((a, u) => a + u.questions.length, 0) + '問</div>';
+  h += '<div class="tags">' + ['全部', '社会常識', '理科', '社会'].map(t => '<button class="tag' + (t === rvTag ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
+  units.forEach(u => {
     h += '<div class="card rv"><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(u.id) + '　' + esc(u.title) + '</h2>';
     h += '<div class="text" style="font-size:16px;line-height:1.9;margin:8px 0">' + fmt(u.text) + '</div>';
     u.questions.forEach((q, i) => {
@@ -216,6 +219,7 @@ function review() {
   });
   app.innerHTML = h;
   document.getElementById('bk').onclick = home;
+  app.querySelectorAll('.tag').forEach(b => b.onclick = () => { rvTag = b.dataset.tag; review(); });
   window.scrollTo(0, 0);
 }
 
