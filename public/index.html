@@ -38,6 +38,12 @@ u.kw{text-decoration:none;background:var(--kw);border-bottom:2px solid #e6b800;p
 .fb.ok b{color:var(--ok)}
 .fb.ng b{color:var(--ng)}
 .hint{margin:6px 0;font-size:15px;font-weight:bold;color:#9c4221;background:#fff1e0;border:2px dashed #ed8936;border-radius:10px;padding:8px 12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{border:2px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-size:18px;line-height:1.5;color:var(--ink)}
+.chip.right{border-color:var(--ok);background:#e9f7ef}
+.chip.wrong{border-color:var(--ng);background:#fdeeee}
+.chip:disabled{cursor:default}
+.tag.lv{border-radius:10px;font-weight:bold}
 .para{margin-top:6px;font-size:15px;background:#fff8e6;border-radius:8px;padding:6px 10px}
 .vocab{border-top:1px dashed var(--line);padding:8px 0}
 .vocab b{font-size:19px}
@@ -69,7 +75,8 @@ function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').
 function fmt(s) { return esc(s).replace(/【(.+?)】/g, '<u class="kw">$1</u>'); }
 function shuffle(n) { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-let DATA = null, filter = '全部';
+let DATA = null, LEV = [], RULES = [], cur = 0, filter = '全部';
+const LV_NAMES = ['レベル0　ことばの力', 'レベル1　1文を読む'];
 const app = document.getElementById('app');
 
 function streakHtml() {
@@ -78,18 +85,21 @@ function streakHtml() {
 }
 
 function home() {
+  DATA = LEV[cur];
   const done = load(LS_DONE, {});
   const tags = ['全部', '社会常識', '理科', '社会'];
   let h = '<h1>中学国語　ことばの力</h1><div class="sub">' + esc(DATA.title) + '　1回3分。文章を読んで、ことばと読み取りの力をつけよう。</div>' + streakHtml();
   h += '<button class="unit" id="rules" style="border:2px solid #ed8936;background:#fff8ee"><span><span class="t">📖 ことばのルール（最初に読もう）</span><br><span class="sub">「なぜ→〜から」「何ですか→〜こと」など、答えの終わり方</span></span></button>';
+  h += '<div class="tags">' + LEV.map((L, i) => '<button class="tag lv' + (i === cur ? ' on' : '') + '" data-lv="' + i + '">' + esc(LV_NAMES[i]) + '</button>').join('') + '</div>';
   h += '<div class="tags">' + tags.map(t => '<button class="tag' + (t === filter ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
   DATA.units.filter(u => filter === '全部' || u.tag === filter).forEach(u => {
     const d = done[u.id];
-    h += '<button class="unit" data-id="' + u.id + '"><span><span class="badge ' + u.tag + '">' + u.tag + '</span><span class="t">' + esc(u.title) + '</span></span><span class="done">' + (d !== undefined ? '✔ ' + d + '/' + u.questions.length : '') + '</span></button>';
+    h += '<button class="unit" data-id="' + u.id + '"><span><span class="badge ' + u.tag + '">' + u.tag + '</span><span class="t">' + esc(u.title) + '</span>' + (u.stage ? '<br><span class="sub">' + esc(u.stage) + '</span>' : '') + '</span><span class="done">' + (d !== undefined ? '✔ ' + d + '/' + u.questions.length : '') + '</span></button>';
   });
   h += '<div class="nav"><button class="btn line" id="rv">一覧で確認（全問の答えを見る）</button></div>';
   app.innerHTML = h;
-  app.querySelectorAll('.tag').forEach(b => b.onclick = () => { filter = b.dataset.tag; home(); });
+  app.querySelectorAll('.tag[data-tag]').forEach(b => b.onclick = () => { filter = b.dataset.tag; home(); });
+  app.querySelectorAll('.tag[data-lv]').forEach(b => b.onclick = () => { cur = +b.dataset.lv; home(); });
   app.querySelectorAll('.unit[data-id]').forEach(b => b.onclick = () => startUnit(b.dataset.id));
   document.getElementById('rules').onclick = () => rules(null, false);
   document.getElementById('rv').onclick = review;
@@ -98,7 +108,7 @@ function home() {
 
 let S = null;
 function startUnit(id) {
-  const u = DATA.units.find(x => x.id === id);
+  const u = LEV.flatMap(L => L.units).find(x => x.id === id);
   S = { u, qi: 0, score: 0, answered: false };
   question();
 }
@@ -111,17 +121,21 @@ function head(u) {
 function question(keep) {
   const { u, qi } = S;
   const q = u.questions[qi];
-  if (!keep) { S.order = shuffle(q.choices.length); S.answered = false; S.pick = null; }
+  if (!keep) { S.order = q.type === 'tap' ? null : shuffle(q.choices.length); S.answered = false; S.pick = null; }
   let h = head(u);
   h += '<div class="card"><div class="sub">' + (qi + 1) + ' / ' + u.questions.length + '</div>';
   h += '<p><span class="kind">' + esc(q.kind) + '</span>' + esc(q.q) + '</p>';
   if (q.hint) h += '<div class="hint">' + esc(q.hint) + '</div>';
   h += '<div id="cs">';
-  S.order.forEach((oi, k) => { h += '<button class="choice" data-k="' + k + '">' + esc(q.choices[oi]) + '</button>'; });
+  if (q.type === 'tap') {
+    h += '<div class="chips">' + q.chunks.map((c, k) => '<button class="chip" data-k="' + k + '">' + esc(c) + '</button>').join('') + '</div>';
+  } else {
+    S.order.forEach((oi, k) => { h += '<button class="choice" data-k="' + k + '">' + esc(q.choices[oi]) + '</button>'; });
+  }
   h += '</div><div id="fb"></div></div>';
   app.innerHTML = h;
   document.getElementById('bk').onclick = home;
-  app.querySelectorAll('.choice').forEach(b => b.onclick = () => answer(+b.dataset.k));
+  app.querySelectorAll('.choice, .chip').forEach(b => b.onclick = () => answer(+b.dataset.k));
   if (keep && S.answered) paint(S.pick); else window.scrollTo(0, 0);
 }
 
@@ -131,18 +145,28 @@ function answer(k) {
   S.pick = k;
   markToday();
   const q = S.u.questions[S.qi];
-  if (S.order[k] === q.ans) S.score++;
+  const ok = q.type === 'tap' ? k === q.tapAns : S.order[k] === q.ans;
+  if (ok) S.score++;
   paint(k);
 }
 
 function paint(k) {
   const q = S.u.questions[S.qi];
-  const ok = S.order[k] === q.ans;
-  app.querySelectorAll('.choice').forEach((b, i) => {
-    b.disabled = true;
-    if (S.order[i] === q.ans) b.classList.add('right');
-    else if (i === k) b.classList.add('wrong');
-  });
+  const tap = q.type === 'tap';
+  const ok = tap ? k === q.tapAns : S.order[k] === q.ans;
+  if (tap) {
+    app.querySelectorAll('.chip').forEach((b, i) => {
+      b.disabled = true;
+      if (i === q.tapAns) b.classList.add('right');
+      else if (i === k) b.classList.add('wrong');
+    });
+  } else {
+    app.querySelectorAll('.choice').forEach((b, i) => {
+      b.disabled = true;
+      if (S.order[i] === q.ans) b.classList.add('right');
+      else if (i === k) b.classList.add('wrong');
+    });
+  }
   let f = '<div class="fb ' + (ok ? 'ok' : 'ng') + '"><b>' + (ok ? '○ 正解！' : '× ざんねん') + '</b><br>' + esc(q.exp);
   if (q.para && q.para.length) {
     f += '<div class="para">💡 言いかえに注目：' + q.para.map(p => '本文の「' + esc(p[0]) + '」→「' + esc(p[1]) + '」').join('、') + '</div>';
@@ -160,7 +184,7 @@ function paint(k) {
 function rules(focus, fromQ) {
   let h = '<div class="nav"><a class="back" id="bk">' + (fromQ ? '← 問題にもどる' : '← もどる') + '</a></div>';
   h += '<h1>📖 ことばのルール</h1><div class="sub">答えの「終わり方」には決まりがあります。問題を解く前に読んで、まちがえたらここにもどってこよう。</div>';
-  DATA.rules.forEach((r, i) => {
+  RULES.forEach((r, i) => {
     h += '<div class="card rule" id="r-' + r.id + '"><h2>' + (i + 1) + '. ' + esc(r.title) + '</h2>';
     h += '<div class="sub">こんな問い：' + r.ask.map(esc).join('　／　') + '</div>';
     h += '<div class="para" style="font-size:16px">答えの終わり方：<b>' + esc(r.end) + '</b></div>';
@@ -205,7 +229,7 @@ function finish() {
 let rvTag = '全部';
 function review() {
   const units = DATA.units.filter(u => rvTag === '全部' || u.tag === rvTag);
-  let h = '<div class="nav"><a class="back" id="bk">← もどる</a></div><h1>👩‍🏫 一覧で確認（先生用）</h1><div class="sub">全ユニットの文章・問題・答え・解説をまとめて見られます（○がついた選択肢が正解）。いまの表示：' + units.length + 'ユニット／' + units.reduce((a, u) => a + u.questions.length, 0) + '問</div>';
+  let h = '<div class="nav"><a class="back" id="bk">← もどる</a></div><h1>👩‍🏫 一覧で確認（先生用）</h1><div class="sub">' + esc(LV_NAMES[cur]) + '：全ユニットの文章・問題・答え・解説をまとめて見られます（○がついた選択肢が正解）。いまの表示：' + units.length + 'ユニット／' + units.reduce((a, u) => a + u.questions.length, 0) + '問</div>';
   h += '<div class="tags">' + ['全部', '社会常識', '理科', '社会'].map(t => '<button class="tag' + (t === rvTag ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
   units.forEach(u => {
     h += '<div class="card rv"><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(u.id) + '　' + esc(u.title) + '</h2>';
@@ -213,7 +237,11 @@ function review() {
     u.questions.forEach((q, i) => {
       h += '<p style="margin:10px 0 2px"><span class="kind">' + esc(q.kind) + '</span>' + (i + 1) + '. ' + esc(q.q) + '</p>';
       if (q.hint) h += '<div class="hint">' + esc(q.hint) + '</div>';
-      q.choices.forEach((c, j) => { h += '<div class="choice' + (j === q.ans ? ' right' : '') + '">' + (j === q.ans ? '○ ' : '') + esc(c) + '</div>'; });
+      if (q.type === 'tap') {
+        h += '<div class="chips">' + q.chunks.map((c, j) => '<span class="chip' + (j === q.tapAns ? ' right' : '') + '">' + (j === q.tapAns ? '○ ' : '') + esc(c) + '</span>').join('') + '</div>';
+      } else {
+        q.choices.forEach((c, j) => { h += '<div class="choice' + (j === q.ans ? ' right' : '') + '">' + (j === q.ans ? '○ ' : '') + esc(c) + '</div>'; });
+      }
       h += '<div class="sub">' + esc(q.exp) + '</div>';
       if (q.para && q.para.length) h += '<div class="para">💡 ' + q.para.map(p => '「' + esc(p[0]) + '」→「' + esc(p[1]) + '」').join('、') + '</div>';
     });
@@ -226,7 +254,9 @@ function review() {
   window.scrollTo(0, 0);
 }
 
-fetch('data/level0.json').then(r => r.json()).then(d => { DATA = d; home(); }).catch(() => { app.textContent = 'データを読みこめませんでした。'; });
+Promise.all(['data/level0.json', 'data/level1.json'].map(f => fetch(f).then(r => r.json())))
+  .then(ls => { LEV = ls; RULES = ls[0].rules; DATA = LEV[cur]; home(); })
+  .catch(() => { app.textContent = 'データを読みこめませんでした。'; });
 </script>
 </body>
 </html>
