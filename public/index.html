@@ -76,6 +76,7 @@ function fmt(s) { return esc(s).replace(/【(.+?)】/g, '<u class="kw">$1</u>');
 function shuffle(n) { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 let DATA = null, LEV = [], RULES = [], cur = 0, filter = '全部';
+function label(u){const m=/^l(\d+)-(\d+)$/.exec(u.id)||/^u(\d+)$/.exec(u.id);if(!m)return u.id;return m.length===3?(+m[1])+'-'+(+m[2]):'0-'+(+m[1]);}
 const LV_NAMES = ['レベル0　ことばの力', 'レベル1　1文を読む', 'レベル2　2文を読む', 'レベル3　まとめと具体', 'レベル4　長めの文章', 'レベル5　小説（気持ち）'];
 const app = document.getElementById('app');
 
@@ -94,7 +95,7 @@ function home() {
   h += '<div class="tags">' + tags.map(t => '<button class="tag' + (t === filter ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
   DATA.units.filter(u => filter === '全部' || u.tag === filter).forEach(u => {
     const d = done[u.id];
-    h += '<button class="unit" data-id="' + u.id + '"><span><span class="badge ' + u.tag + '">' + u.tag + '</span><span class="t">' + esc(u.title) + '</span>' + (u.stage ? '<br><span class="sub">' + esc(u.stage) + '</span>' : '') + '</span><span class="done">' + (d !== undefined ? '✔ ' + d + '/' + u.questions.length : '') + '</span></button>';
+    h += '<button class="unit" data-id="' + u.id + '"><span><span class="badge ' + u.tag + '">' + u.tag + '</span><span class="t">' + esc(label(u)) + '　' + esc(u.title) + '</span>' + (u.stage ? '<br><span class="sub">' + esc(u.stage) + '</span>' : '') + '</span><span class="done">' + (d !== undefined ? '✔ ' + d + '/' + u.questions.length : '') + '</span></button>';
   });
   h += '<div class="nav"><button class="btn line" id="rv">一覧で確認（全問の答えを見る）</button></div>';
   app.innerHTML = h;
@@ -232,7 +233,7 @@ function review() {
   let h = '<div class="nav"><a class="back" id="bk">← もどる</a></div><h1>👩‍🏫 一覧で確認（先生用）</h1><div class="sub">' + esc(LV_NAMES[cur]) + '：全ユニットの文章・問題・答え・解説をまとめて見られます（○がついた選択肢が正解）。いまの表示：' + units.length + 'ユニット／' + units.reduce((a, u) => a + u.questions.length, 0) + '問</div>';
   h += '<div class="tags">' + ['全部', '社会常識', '理科', '社会'].map(t => '<button class="tag' + (t === rvTag ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
   units.forEach(u => {
-    h += '<div class="card rv"><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(u.id) + '　' + esc(u.title) + '</h2>';
+    h += '<div class="card rv"><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(label(u)) + '　' + esc(u.title) + '</h2>';
     h += '<div class="text" style="font-size:16px;line-height:1.9;margin:8px 0">' + fmt(u.text) + '</div>';
     u.questions.forEach((q, i) => {
       h += '<p style="margin:10px 0 2px"><span class="kind">' + esc(q.kind) + '</span>' + (i + 1) + '. ' + esc(q.q) + '</p>';
