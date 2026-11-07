@@ -38,6 +38,13 @@ u.kw{text-decoration:none;background:var(--kw);border-bottom:2px solid #e6b800;p
 .fb.ok b{color:var(--ok)}
 .fb.ng b{color:var(--ng)}
 .hint{margin:6px 0;font-size:15px;font-weight:bold;color:#9c4221;background:#fff1e0;border:2px dashed #ed8936;border-radius:10px;padding:8px 12px}
+.sp{display:flex;align-items:center;gap:8px;border:2px solid var(--line);border-radius:10px;padding:8px;margin:8px 0;background:#fff}
+.spt{flex:1;line-height:1.6}
+.spbs{display:flex;gap:6px}
+.spb{width:46px;height:46px;font-size:22px;border:2px solid var(--line);border-radius:10px;background:#fff}
+.spb.sel{border-color:#3182ce;background:#ebf4ff}
+.spb.right{border-color:var(--ok);background:#e9f7ef}
+.spb.wrong{border-color:var(--ng);background:#fdeeee}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .chip{border:2px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-size:18px;line-height:1.5;color:var(--ink)}
 .chip.right{border-color:var(--ok);background:#e9f7ef}
@@ -77,7 +84,7 @@ function shuffle(n) { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0;
 
 let DATA = null, LEV = [], RULES = [], cur = 0, filter = '全部';
 function label(u){const m=/^l(\d+)-(\d+)$/.exec(u.id)||/^u(\d+)$/.exec(u.id);if(!m)return u.id;return m.length===3?(+m[1])+'-'+(+m[2]):'0-'+(+m[1]);}
-const LV_NAMES = ['レベル0　ことばの力', 'レベル1　1文を読む', 'レベル2　2文を読む', 'レベル3　まとめと具体', 'レベル4　長めの文章', 'レベル5　小説（気持ち）'];
+const LV_NAMES = ['レベル0　ことばの力', 'レベル1　1文を読む', 'レベル2　2文を読む', 'レベル3　まとめと具体', 'レベル4　長めの文章', 'レベル5　小説（気持ち）', 'レベル6　半分ずつ読む', 'レベル7　気持ちの語句'];
 const app = document.getElementById('app');
 
 function streakHtml() {
@@ -122,13 +129,16 @@ function head(u) {
 function question(keep) {
   const { u, qi } = S;
   const q = u.questions[qi];
-  if (!keep) { S.order = q.type === 'tap' ? null : shuffle(q.choices.length); S.answered = false; S.pick = null; }
+  if (!keep) { S.order = (q.type === 'tap' || q.type === 'split') ? null : shuffle(q.choices.length); S.answered = false; S.pick = null; S.sp = [null, null]; }
   let h = head(u);
   h += '<div class="card"><div class="sub">' + (qi + 1) + ' / ' + u.questions.length + '</div>';
   h += '<p><span class="kind">' + esc(q.kind) + '</span>' + esc(q.q) + '</p>';
   if (q.hint) h += '<div class="hint">' + esc(q.hint) + '</div>';
   h += '<div id="cs">';
-  if (q.type === 'tap') {
+  if (q.type === 'split') {
+    q.parts.forEach((p, i) => { h += '<div class="sp"><div class="spt"><b>' + (i ? '後半' : '前半') + '</b>　' + esc(p) + '</div><div class="spbs"><button class="spb" data-p="' + i + '" data-v="1">○</button><button class="spb" data-p="' + i + '" data-v="0">×</button></div></div>'; });
+    h += '<button class="btn" id="chk" disabled>答え合わせ</button>';
+  } else if (q.type === 'tap') {
     h += '<div class="chips">' + q.chunks.map((c, k) => '<button class="chip" data-k="' + k + '">' + esc(c) + '</button>').join('') + '</div>';
   } else {
     S.order.forEach((oi, k) => { h += '<button class="choice" data-k="' + k + '">' + esc(q.choices[oi]) + '</button>'; });
@@ -137,6 +147,15 @@ function question(keep) {
   app.innerHTML = h;
   document.getElementById('bk').onclick = home;
   app.querySelectorAll('.choice, .chip').forEach(b => b.onclick = () => answer(+b.dataset.k));
+  if (q.type === 'split') {
+    const refresh = () => {
+      app.querySelectorAll('.spb').forEach(b => b.classList.toggle('sel', S.sp[+b.dataset.p] === +b.dataset.v));
+      document.getElementById('chk').disabled = S.sp[0] === null || S.sp[1] === null;
+    };
+    app.querySelectorAll('.spb').forEach(b => b.onclick = () => { if (S.answered) return; S.sp[+b.dataset.p] = +b.dataset.v; refresh(); });
+    document.getElementById('chk').onclick = () => answer(S.sp.slice());
+    refresh();
+  }
   if (keep && S.answered) paint(S.pick); else window.scrollTo(0, 0);
 }
 
@@ -146,7 +165,7 @@ function answer(k) {
   S.pick = k;
   markToday();
   const q = S.u.questions[S.qi];
-  const ok = q.type === 'tap' ? k === q.tapAns : S.order[k] === q.ans;
+  const ok = q.type === 'split' ? (k[0] === q.ok[0] && k[1] === q.ok[1]) : q.type === 'tap' ? k === q.tapAns : S.order[k] === q.ans;
   if (ok) S.score++;
   paint(k);
 }
@@ -154,8 +173,17 @@ function answer(k) {
 function paint(k) {
   const q = S.u.questions[S.qi];
   const tap = q.type === 'tap';
-  const ok = tap ? k === q.tapAns : S.order[k] === q.ans;
-  if (tap) {
+  const sp = q.type === 'split';
+  const ok = sp ? (k[0] === q.ok[0] && k[1] === q.ok[1]) : tap ? k === q.tapAns : S.order[k] === q.ans;
+  if (sp) {
+    app.querySelectorAll('.spb').forEach(b => {
+      b.disabled = true;
+      const p = +b.dataset.p, v = +b.dataset.v;
+      if (v === q.ok[p]) b.classList.add('right');
+      else if (k[p] === v) b.classList.add('wrong');
+    });
+    document.getElementById('chk').disabled = true;
+  } else if (tap) {
     app.querySelectorAll('.chip').forEach((b, i) => {
       b.disabled = true;
       if (i === q.tapAns) b.classList.add('right');
@@ -238,7 +266,9 @@ function review() {
     u.questions.forEach((q, i) => {
       h += '<p style="margin:10px 0 2px"><span class="kind">' + esc(q.kind) + '</span>' + (i + 1) + '. ' + esc(q.q) + '</p>';
       if (q.hint) h += '<div class="hint">' + esc(q.hint) + '</div>';
-      if (q.type === 'tap') {
+      if (q.type === 'split') {
+        h += q.parts.map((p, j) => '<div class="choice">' + (j ? '後半' : '前半') + '：' + esc(p) + '　→　' + (q.ok[j] ? '○' : '×') + '</div>').join('');
+      } else if (q.type === 'tap') {
         h += '<div class="chips">' + q.chunks.map((c, j) => '<span class="chip' + (j === q.tapAns ? ' right' : '') + '">' + (j === q.tapAns ? '○ ' : '') + esc(c) + '</span>').join('') + '</div>';
       } else {
         q.choices.forEach((c, j) => { h += '<div class="choice' + (j === q.ans ? ' right' : '') + '">' + (j === q.ans ? '○ ' : '') + esc(c) + '</div>'; });
@@ -255,7 +285,7 @@ function review() {
   window.scrollTo(0, 0);
 }
 
-Promise.all(['data/level0.json', 'data/level1.json', 'data/level2.json', 'data/level3.json', 'data/level4.json', 'data/level5.json'].map(f => fetch(f).then(r => r.json())))
+Promise.all(['data/level0.json', 'data/level1.json', 'data/level2.json', 'data/level3.json', 'data/level4.json', 'data/level5.json', 'data/level6.json', 'data/level7.json'].map(f => fetch(f).then(r => r.json())))
   .then(ls => { LEV = ls; RULES = ls[0].rules; DATA = LEV[cur]; home(); })
   .catch(() => { app.textContent = 'データを読みこめませんでした。'; });
 </script>
