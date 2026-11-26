@@ -22,6 +22,9 @@ button{font:inherit;cursor:pointer}
 .unit .t{font-weight:bold}
 .badge{display:inline-block;font-size:12px;border-radius:10px;padding:0 8px;background:#e6eefb;color:var(--main);margin-right:6px}
 .badge.理科{background:#e3f5ea;color:var(--ok)}
+.badge.古典{background:#f3e8ff;color:#6b46c1}
+.kb{width:100%;border-collapse:collapse;font-size:16px;line-height:1.7}.kb td{border-top:1px dashed var(--line);padding:6px 4px;vertical-align:top}.kb td.ko{font-weight:bold;width:55%}.kb td.ya{color:var(--sub);font-size:15px}
+.chr{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.chr span{background:#f3e8ff;border-radius:10px;padding:4px 10px;font-size:15px}
 .badge.社会{background:#fdecd9;color:#b7570f}
 .done{color:var(--ok);font-size:14px;white-space:nowrap}
 .btn{background:var(--main);color:#fff;border:0;border-radius:10px;padding:10px 18px;margin:6px 6px 0 0}
@@ -84,7 +87,7 @@ function shuffle(n) { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0;
 
 let DATA = null, LEV = [], RULES = [], cur = 0, filter = '全部';
 function label(u){for(let i=0;i<LEV.length;i++){const j=LEV[i].units.findIndex(x=>x.id===u.id);if(j>=0)return i+'-'+(j+1);}return u.id;}
-const LV_NAMES = ["レベル0　ことばの力", "レベル1　1文を読む", "レベル2　2文を読む", "レベル3　まとめと具体", "レベル4　要するに何の話？", "レベル5　半分ずつ読む", "レベル6　長めの文章", "レベル7　小説（気持ち）", "レベル8　気持ちの語句"];
+const LV_NAMES = ["レベル0　ことばの力", "レベル1　1文を読む", "レベル2　2文を読む", "レベル3　まとめと具体", "レベル4　要するに何の話？", "レベル5　半分ずつ読む", "レベル6　長めの文章", "レベル7　小説（気持ち）", "レベル8　気持ちの語句", "古典1　誰が？"];
 const app = document.getElementById('app');
 
 function streakHtml() {
@@ -95,7 +98,7 @@ function streakHtml() {
 function home() {
   DATA = LEV[cur];
   const done = load(LS_DONE, {});
-  const tags = ['全部', '社会常識', '理科', '社会'];
+  const tags = ['全部', '社会常識', '理科', '社会', '古典'];
   let h = '<div class="nav"><a class="back" href="https://chugaku.senta1111.workers.dev/">← 中学自習サイトのトップへ</a></div><h1>中学国語　ことばの力</h1><div class="sub">' + esc(DATA.title) + '　1回3分。文章を読んで、ことばと読み取りの力をつけよう。</div>' + streakHtml();
   h += '<button class="unit" id="rules" style="border:2px solid #ed8936;background:#fff8ee"><span><span class="t">📖 ことばのルール（最初に読もう）</span><br><span class="sub">「なぜ→〜から」「何ですか→〜こと」など、答えの終わり方</span></span></button>';
   h += '<div class="tags">' + LEV.map((L, i) => '<button class="tag lv' + (i === cur ? ' on' : '') + '" data-lv="' + i + '">' + esc(LV_NAMES[i]) + '</button>').join('') + '</div>';
@@ -121,9 +124,15 @@ function startUnit(id) {
   question();
 }
 
+function bodyHtml(u) {
+  if (!u.kobun) return fmt(u.text);
+  let h = '<div class="sub">👥 登場人物</div><div class="chr">' + u.chars.map(c => '<span>' + c[0] + ' <b>' + esc(c[1]) + '</b>＝' + esc(c[2]) + '</span>').join('') + '</div>';
+  h += '<table class="kb"><tr><td class="sub">古文</td><td class="sub">現代語訳</td></tr>' + u.kobun.map(r => '<tr><td class="ko">' + esc(r[0]) + '</td><td class="ya">' + esc(r[1]) + '</td></tr>').join('') + '</table>';
+  return h;
+}
 function head(u) {
   return '<div class="nav"><a class="back" id="bk">← もどる</a></div><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(u.title) + '</h2>' +
-    '<div class="card text">' + fmt(u.text) + '</div>';
+    '<div class="card text">' + bodyHtml(u) + '</div>';
 }
 
 function question(keep) {
@@ -262,7 +271,7 @@ function review() {
   h += '<div class="tags">' + ['全部', '社会常識', '理科', '社会'].map(t => '<button class="tag' + (t === rvTag ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
   units.forEach(u => {
     h += '<div class="card rv"><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(label(u)) + '　' + esc(u.title) + '</h2>';
-    h += '<div class="text" style="font-size:16px;line-height:1.9;margin:8px 0">' + fmt(u.text) + '</div>';
+    h += '<div class="text" style="font-size:16px;line-height:1.9;margin:8px 0">' + bodyHtml(u) + '</div>';
     u.questions.forEach((q, i) => {
       h += '<p style="margin:10px 0 2px"><span class="kind">' + esc(q.kind) + '</span>' + (i + 1) + '. ' + esc(q.q) + '</p>';
       if (q.hint) h += '<div class="hint">' + esc(q.hint) + '</div>';
@@ -285,7 +294,7 @@ function review() {
   window.scrollTo(0, 0);
 }
 
-Promise.all(["data/level0.json", "data/level1.json", "data/level2.json", "data/level3.json", "data/level8.json", "data/level6.json", "data/level4.json", "data/level5.json", "data/level7.json"].map(f => fetch(f).then(r => r.json())))
+Promise.all(["data/level0.json", "data/level1.json", "data/level2.json", "data/level3.json", "data/level8.json", "data/level6.json", "data/level4.json", "data/level5.json", "data/level7.json", "data/level9.json"].map(f => fetch(f).then(r => r.json())))
   .then(ls => { LEV = ls; RULES = ls[0].rules; DATA = LEV[cur]; home(); })
   .catch(() => { app.textContent = 'データを読みこめませんでした。'; });
 </script>
