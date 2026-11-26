@@ -241,6 +241,10 @@ function rules(focus, fromQ) {
   if (el) { el.style.outline = '3px solid #ed8936'; el.scrollIntoView(); } else window.scrollTo(0, 0);
 }
 
+function ochiHtml(u) {
+  if (!u.ochi) return '';
+  return '<div class="card" style="border:2px solid #6b46c1;background:#faf5ff"><h2>💡 このお話のオチ</h2>' + u.ochi.map(l => '<p style="margin:6px 0">' + (l.startsWith('➡') ? '<b>' + esc(l) + '</b>' : esc(l)) + '</p>').join('') + '</div>';
+}
 function vocabHtml(u) {
   const rev = (u.review && u.review.length)
     ? '<h2 style="margin-top:12px">🔁 復習ことば（前に出たことば）</h2>' + u.review.map(r => '<div class="vocab"><b>' + esc(r.w) + '</b><span class="y">' + esc(r.yomi) + '</span><br>' + esc(r.mean) + '</div>').join('')
@@ -255,6 +259,7 @@ function finish() {
   save(LS_DONE, done);
   markToday();
   let h = head(u);
+  h += ochiHtml(u);
   h += '<div class="card"><h2>結果：' + score + ' / ' + u.questions.length + '</h2>';
   h += '<h2 style="margin-top:12px">ことばカード</h2>' + vocabHtml(u);
   h += '<div class="pt">📌 ' + esc(u.point) + '</div><div class="lk">📚 ' + esc(u.link) + '</div></div>';
@@ -287,6 +292,7 @@ function review() {
       h += '<div class="sub">' + esc(q.exp) + '</div>';
       if (q.para && q.para.length) h += '<div class="para">💡 ' + q.para.map(p => '「' + esc(p[0]) + '」→「' + esc(p[1]) + '」').join('、') + '</div>';
     });
+    h += ochiHtml(u);
     h += '<h2 style="margin-top:12px">ことばカード</h2>' + vocabHtml(u);
     h += '<div class="pt">📌 ' + esc(u.point) + '</div><div class="lk">📚 ' + esc(u.link) + '</div></div>';
   });
