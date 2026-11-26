@@ -87,7 +87,7 @@ function shuffle(n) { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0;
 
 let DATA = null, LEV = [], RULES = [], cur = 0, filter = '全部';
 function label(u){for(let i=0;i<LEV.length;i++){const j=LEV[i].units.findIndex(x=>x.id===u.id);if(j>=0)return i+'-'+(j+1);}return u.id;}
-const LV_NAMES = ["レベル0　ことばの力", "レベル1　1文を読む", "レベル2　2文を読む", "レベル3　まとめと具体", "レベル4　要するに何の話？", "レベル5　半分ずつ読む", "レベル6　長めの文章", "レベル7　小説（気持ち）", "レベル8　気持ちの語句", "古典1　誰が？"];
+const LV_NAMES = ["レベル0　ことばの力", "レベル1　1文を読む", "レベル2　2文を読む", "レベル3　まとめと具体", "レベル4　要するに何の話？", "レベル5　半分ずつ読む", "レベル6　長めの文章", "レベル7　小説（気持ち）", "レベル8　気持ちの語句", "古典1　誰が？", "古典2　誰のセリフ？"];
 const app = document.getElementById('app');
 
 function streakHtml() {
@@ -294,7 +294,7 @@ function review() {
   window.scrollTo(0, 0);
 }
 
-Promise.all(["data/level0.json", "data/level1.json", "data/level2.json", "data/level3.json", "data/level8.json", "data/level6.json", "data/level4.json", "data/level5.json", "data/level7.json", "data/level9.json"].map(f => fetch(f).then(r => r.json())))
+Promise.all(["data/level0.json", "data/level1.json", "data/level2.json", "data/level3.json", "data/level8.json", "data/level6.json", "data/level4.json", "data/level5.json", "data/level7.json", "data/level9.json", "data/level10.json"].map(f => fetch(f).then(r => r.json())))
   .then(ls => { LEV = ls; RULES = ls[0].rules; DATA = LEV[cur]; home(); })
   .catch(() => { app.textContent = 'データを読みこめませんでした。'; });
 </script>
