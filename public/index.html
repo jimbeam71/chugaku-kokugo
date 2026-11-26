@@ -126,7 +126,9 @@ function startUnit(id) {
 
 function bodyHtml(u) {
   if (!u.kobun) return fmt(u.text);
-  let h = '<div class="sub">👥 登場人物</div><div class="chr">' + u.chars.map(c => '<span>' + c[0] + ' <b>' + esc(c[1]) + '</b>＝' + esc(c[2]) + '</span>').join('') + '</div>';
+  let h = '';
+  if (u.story) h += '<div class="para" style="font-size:16px;line-height:1.8;margin-bottom:10px"><b>📜 これまでのお話</b><br>' + u.story.map(esc).join('<br>') + '</div>';
+  h += '<div class="sub">👥 登場人物</div><div class="chr">' + u.chars.map(c => '<span>' + c[0] + ' <b>' + esc(c[1]) + '</b>＝' + esc(c[2]) + '</span>').join('') + '</div>';
   h += '<table class="kb"><tr><td class="sub">古文</td><td class="sub">現代語訳</td></tr>' + u.kobun.map(r => '<tr><td class="ko">' + esc(r[0]) + '</td><td class="ya">' + esc(r[1]) + '</td></tr>').join('') + '</table>';
   return h;
 }
