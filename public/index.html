@@ -135,7 +135,7 @@ function bodyHtml(u) {
   return h;
 }
 function head(u) {
-  return '<div class="nav"><a class="back" id="bk">← もどる</a></div><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(u.title) + '</h2>' +
+  return '<div class="nav"><a class="back" id="bk">← もどる</a></div><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + rb(u.title) + '</h2>' +
     '<div class="card text">' + bodyHtml(u) + '</div>';
 }
 
