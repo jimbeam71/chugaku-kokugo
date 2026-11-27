@@ -26,9 +26,9 @@ button{font:inherit;cursor:pointer}
 .kb{width:100%;border-collapse:collapse;font-size:16px;line-height:1.7}.kb td{border-top:1px dashed var(--line);padding:6px 4px;vertical-align:top}.kb td.ko{line-height:2.2;font-weight:bold;width:55%}.kb td.ya{color:var(--sub);font-size:15px}
 .chr{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.chr span{background:#f3e8ff;border-radius:10px;padding:4px 10px;font-size:15px}
 .badge.漢文{background:#ffe4e6;color:#be123c}
-span.kv{display:inline-block;writing-mode:vertical-rl;vertical-align:middle;background:#fff;border:1px solid #f3c6cc;border-radius:6px;padding:6px 6px 6px 16px;margin:4px;font-size:22px;line-height:1.25;letter-spacing:4px;font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif}
+span.kv{display:inline-block;writing-mode:vertical-rl;vertical-align:middle;background:#fff;border:1px solid #f3c6cc;border-radius:6px;padding:8px 8px 8px 14px;margin:4px;font-size:24px;line-height:1.25;letter-spacing:4px;font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif}
 span.kc{position:relative;display:inline-block}
-span.kt{position:absolute;left:-13px;bottom:-4px;font-size:11px;line-height:1;letter-spacing:0;color:#be123c;font-weight:bold;writing-mode:horizontal-tb;font-family:sans-serif}
+span.kt{position:absolute;left:-9px;bottom:-2px;font-size:13px;line-height:1;letter-spacing:0;color:#be123c;font-weight:bold;writing-mode:horizontal-tb;font-family:sans-serif}
 sub.ten{font-size:11px;color:#be123c;font-weight:bold;vertical-align:-4px;margin:0 1px}
 .badge.社会{background:#fdecd9;color:#b7570f}
 .done{color:var(--ok);font-size:14px;white-space:nowrap}
@@ -92,7 +92,7 @@ function fmt(s) { return esc(s).replace(/【(.+?)】/g, '<u class="kw">$1</u>');
 function shuffle(n) { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 let DATA = null, LEV = [], RULES = [], cur = 0, filter = '全部';
-function label(u){for(let i=0;i<LEV.length;i++){const j=LEV[i].units.findIndex(x=>x.id===u.id);if(j>=0)return i+'-'+(j+1);}return u.id;}
+function label(u){for(let i=0;i<LEV.length;i++){const j=LEV[i].units.findIndex(x=>x.id===u.id);if(j>=0){const m=(u.stage||'').match(/^(古典|漢文)(\d+)/);return (m?m[2]:i)+'-'+(j+1);}}return u.id;}
 const LV_NAMES = ["レベル0　ことばの力", "レベル1　1文を読む", "レベル2　2文を読む", "レベル3　まとめと具体", "レベル4　要するに何の話？", "レベル5　半分ずつ読む", "レベル6　長めの文章", "レベル7　小説（気持ち）", "レベル8　気持ちの語句", "古典1　誰が？", "古典2　誰のセリフ？", "古典3　オチは何？", "古典4　入試形式", "古典5　知識", "漢文1　返り点"];
 const app = document.getElementById('app');
 
