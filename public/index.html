@@ -23,7 +23,7 @@ button{font:inherit;cursor:pointer}
 .badge{display:inline-block;font-size:12px;border-radius:10px;padding:0 8px;background:#e6eefb;color:var(--main);margin-right:6px}
 .badge.理科{background:#e3f5ea;color:var(--ok)}
 .badge.古典{background:#f3e8ff;color:#6b46c1}
-.kb{width:100%;border-collapse:collapse;font-size:16px;line-height:1.7}.kb td{border-top:1px dashed var(--line);padding:6px 4px;vertical-align:top}.kb td.ko{font-weight:bold;width:55%}.kb td.ya{color:var(--sub);font-size:15px}
+.kb{width:100%;border-collapse:collapse;font-size:16px;line-height:1.7}.kb td{border-top:1px dashed var(--line);padding:6px 4px;vertical-align:top}.kb td.ko{line-height:2.2;font-weight:bold;width:55%}.kb td.ya{color:var(--sub);font-size:15px}
 .chr{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.chr span{background:#f3e8ff;border-radius:10px;padding:4px 10px;font-size:15px}
 .badge.社会{background:#fdecd9;color:#b7570f}
 .done{color:var(--ok);font-size:14px;white-space:nowrap}
@@ -82,6 +82,7 @@ function streak() {
   return n;
 }
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function rb(s) { return esc(s).replace(/\{(.+?)\|(.+?)\}/g, '<ruby>$1<rt>$2</rt></ruby>'); }
 function fmt(s) { return esc(s).replace(/【(.+?)】/g, '<u class="kw">$1</u>'); }
 function shuffle(n) { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
@@ -105,7 +106,7 @@ function home() {
   h += '<div class="tags">' + tags.map(t => '<button class="tag' + (t === filter ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
   DATA.units.filter(u => filter === '全部' || u.tag === filter).forEach(u => {
     const d = done[u.id];
-    h += '<button class="unit" data-id="' + u.id + '"><span><span class="badge ' + u.tag + '">' + u.tag + '</span><span class="t">' + esc(label(u)) + '　' + esc(u.title) + '</span>' + (u.stage ? '<br><span class="sub">' + esc(u.stage) + '</span>' : '') + '</span><span class="done">' + (d !== undefined ? '✔ ' + d + '/' + u.questions.length : '') + '</span></button>';
+    h += '<button class="unit" data-id="' + u.id + '"><span><span class="badge ' + u.tag + '">' + u.tag + '</span><span class="t">' + esc(label(u)) + '　' + rb(u.title) + '</span>' + (u.stage ? '<br><span class="sub">' + esc(u.stage) + '</span>' : '') + '</span><span class="done">' + (d !== undefined ? '✔ ' + d + '/' + u.questions.length : '') + '</span></button>';
   });
   h += '<div class="nav"><button class="btn line" id="rv">一覧で確認（全問の答えを見る）</button></div>';
   app.innerHTML = h;
@@ -127,9 +128,9 @@ function startUnit(id) {
 function bodyHtml(u) {
   if (!u.kobun) return fmt(u.text);
   let h = '';
-  if (u.story) h += '<div class="para" style="font-size:16px;line-height:1.8;margin-bottom:10px"><b>📜 これまでのお話</b><br>' + u.story.map(esc).join('<br>') + '</div>';
+  if (u.story) h += '<div class="para" style="font-size:16px;line-height:1.8;margin-bottom:10px"><b>📜 これまでのお話</b><br>' + u.story.map(rb).join('<br>') + '</div>';
   h += '<div class="sub">👥 登場人物</div><div class="chr">' + u.chars.map(c => '<span>' + c[0] + ' <b>' + esc(c[1]) + '</b>＝' + esc(c[2]) + '</span>').join('') + '</div>';
-  h += '<table class="kb"><tr><td class="sub">古文</td><td class="sub">現代語訳</td></tr>' + u.kobun.map(r => '<tr><td class="ko">' + esc(r[0]) + '</td><td class="ya">' + esc(r[1]) + '</td></tr>').join('') + '</table>';
+  h += '<table class="kb"><tr><td class="sub">古文</td><td class="sub">現代語訳</td></tr>' + u.kobun.map(r => '<tr><td class="ko">' + rb(r[0]) + '</td><td class="ya">' + esc(r[1]) + '</td></tr>').join('') + '</table>';
   if (u.notes) h += '<div class="sub" style="margin-top:8px;line-height:1.7">' + u.notes.map(esc).join('<br>') + '</div>';
   return h;
 }
@@ -278,7 +279,7 @@ function review() {
   let h = '<div class="nav"><a class="back" id="bk">← もどる</a></div><h1>👩‍🏫 一覧で確認（先生用）</h1><div class="sub">' + esc(LV_NAMES[cur]) + '：全ユニットの文章・問題・答え・解説をまとめて見られます（○がついた選択肢が正解）。いまの表示：' + units.length + 'ユニット／' + units.reduce((a, u) => a + u.questions.length, 0) + '問</div>';
   h += '<div class="tags">' + ['全部', '社会常識', '理科', '社会'].map(t => '<button class="tag' + (t === rvTag ? ' on' : '') + '" data-tag="' + t + '">' + t + '</button>').join('') + '</div>';
   units.forEach(u => {
-    h += '<div class="card rv"><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(label(u)) + '　' + esc(u.title) + '</h2>';
+    h += '<div class="card rv"><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(label(u)) + '　' + rb(u.title) + '</h2>';
     h += '<div class="text" style="font-size:16px;line-height:1.9;margin:8px 0">' + bodyHtml(u) + '</div>';
     u.questions.forEach((q, i) => {
       h += '<p style="margin:10px 0 2px"><span class="kind">' + esc(q.kind) + '</span>' + (i + 1) + '. ' + esc(q.q) + '</p>';
