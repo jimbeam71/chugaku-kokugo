@@ -25,6 +25,8 @@ button{font:inherit;cursor:pointer}
 .badge.古典{background:#f3e8ff;color:#6b46c1}
 .kb{width:100%;border-collapse:collapse;font-size:16px;line-height:1.7}.kb td{border-top:1px dashed var(--line);padding:6px 4px;vertical-align:top}.kb td.ko{line-height:2.2;font-weight:bold;width:55%}.kb td.ya{color:var(--sub);font-size:15px}
 .chr{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.chr span{background:#f3e8ff;border-radius:10px;padding:4px 10px;font-size:15px}
+.badge.漢文{background:#ffe4e6;color:#be123c}
+sub.ten{font-size:11px;color:#be123c;font-weight:bold;vertical-align:-4px;margin:0 1px}
 .badge.社会{background:#fdecd9;color:#b7570f}
 .done{color:var(--ok);font-size:14px;white-space:nowrap}
 .btn{background:var(--main);color:#fff;border:0;border-radius:10px;padding:10px 18px;margin:6px 6px 0 0}
@@ -82,13 +84,13 @@ function streak() {
   return n;
 }
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-function rb(s) { return esc(s).replace(/\{(.+?)\|(.+?)\}/g, '<ruby>$1<rt>$2</rt></ruby>'); }
+function rb(s) { return esc(s).replace(/\{(.+?)\|(.+?)\}/g, '<ruby>$1<rt>$2</rt></ruby>').replace(/⟨(.+?)⟩/g, '<sub class="ten">$1</sub>'); }
 function fmt(s) { return esc(s).replace(/【(.+?)】/g, '<u class="kw">$1</u>'); }
 function shuffle(n) { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 let DATA = null, LEV = [], RULES = [], cur = 0, filter = '全部';
 function label(u){for(let i=0;i<LEV.length;i++){const j=LEV[i].units.findIndex(x=>x.id===u.id);if(j>=0)return i+'-'+(j+1);}return u.id;}
-const LV_NAMES = ["レベル0　ことばの力", "レベル1　1文を読む", "レベル2　2文を読む", "レベル3　まとめと具体", "レベル4　要するに何の話？", "レベル5　半分ずつ読む", "レベル6　長めの文章", "レベル7　小説（気持ち）", "レベル8　気持ちの語句", "古典1　誰が？", "古典2　誰のセリフ？", "古典3　オチは何？", "古典4　入試形式", "古典5　知識"];
+const LV_NAMES = ["レベル0　ことばの力", "レベル1　1文を読む", "レベル2　2文を読む", "レベル3　まとめと具体", "レベル4　要するに何の話？", "レベル5　半分ずつ読む", "レベル6　長めの文章", "レベル7　小説（気持ち）", "レベル8　気持ちの語句", "古典1　誰が？", "古典2　誰のセリフ？", "古典3　オチは何？", "古典4　入試形式", "古典5　知識", "漢文1　返り点"];
 const app = document.getElementById('app');
 
 function streakHtml() {
@@ -99,7 +101,7 @@ function streakHtml() {
 function home() {
   DATA = LEV[cur];
   const done = load(LS_DONE, {});
-  const tags = ['全部', '社会常識', '理科', '社会', '古典'];
+  const tags = ['全部', '社会常識', '理科', '社会', '古典', '漢文'];
   let h = '<div class="nav"><a class="back" href="https://chugaku.senta1111.workers.dev/">← 中学自習サイトのトップへ</a></div><h1>中学国語　ことばの力</h1><div class="sub">' + esc(DATA.title) + '　1回3分。文章を読んで、ことばと読み取りの力をつけよう。</div>' + streakHtml();
   h += '<button class="unit" id="rules" style="border:2px solid #ed8936;background:#fff8ee"><span><span class="t">📖 ことばのルール（最初に読もう）</span><br><span class="sub">「なぜ→〜から」「何ですか→〜こと」など、答えの終わり方</span></span></button>';
   h += '<div class="tags">' + LEV.map((L, i) => '<button class="tag lv' + (i === cur ? ' on' : '') + '" data-lv="' + i + '">' + esc(LV_NAMES[i]) + '</button>').join('') + '</div>';
@@ -146,7 +148,7 @@ function question(keep) {
   if (!keep) { S.order = (q.type === 'tap' || q.type === 'split') ? null : shuffle(q.choices.length); S.answered = false; S.pick = null; S.sp = [null, null]; }
   let h = head(u);
   h += '<div class="card"><div class="sub">' + (qi + 1) + ' / ' + u.questions.length + '</div>';
-  h += '<p><span class="kind">' + esc(q.kind) + '</span>' + esc(q.q) + '</p>';
+  h += '<p><span class="kind">' + esc(q.kind) + '</span>' + rb(q.q) + '</p>';
   if (q.hint) h += '<div class="hint">' + esc(q.hint) + '</div>';
   h += '<div id="cs">';
   if (q.type === 'split') {
@@ -155,7 +157,7 @@ function question(keep) {
   } else if (q.type === 'tap') {
     h += '<div class="chips">' + q.chunks.map((c, k) => '<button class="chip" data-k="' + k + '">' + esc(c) + '</button>').join('') + '</div>';
   } else {
-    S.order.forEach((oi, k) => { h += '<button class="choice" data-k="' + k + '">' + esc(q.choices[oi]) + '</button>'; });
+    S.order.forEach((oi, k) => { h += '<button class="choice" data-k="' + k + '">' + rb(q.choices[oi]) + '</button>'; });
   }
   h += '</div><div id="fb"></div></div>';
   app.innerHTML = h;
@@ -210,7 +212,7 @@ function paint(k) {
       else if (i === k) b.classList.add('wrong');
     });
   }
-  let f = '<div class="fb ' + (ok ? 'ok' : 'ng') + '"><b>' + (ok ? '○ 正解！' : '× ざんねん') + '</b><br>' + esc(q.exp);
+  let f = '<div class="fb ' + (ok ? 'ok' : 'ng') + '"><b>' + (ok ? '○ 正解！' : '× ざんねん') + '</b><br>' + rb(q.exp);
   if (q.para && q.para.length) {
     f += '<div class="para">💡 言いかえに注目：' + q.para.map(p => '本文の「' + esc(p[0]) + '」→「' + esc(p[1]) + '」').join('、') + '</div>';
   }
@@ -231,8 +233,8 @@ function rules(focus, fromQ) {
     h += '<div class="card rule" id="r-' + r.id + '"><h2>' + (i + 1) + '. ' + esc(r.title) + '</h2>';
     h += '<div class="sub">こんな問い：' + r.ask.map(esc).join('　／　') + '</div>';
     h += '<div class="para" style="font-size:16px">答えの終わり方：<b>' + esc(r.end) + '</b></div>';
-    h += '<div class="fb ok" style="margin-top:8px"><b>○</b> ' + esc(r.ok) + '</div>';
-    r.ng.forEach(n => { h += '<div class="fb ng" style="margin-top:6px"><b>×</b> ' + esc(n) + '</div>'; });
+    h += '<div class="fb ok" style="margin-top:8px"><b>○</b> ' + rb(r.ok) + '</div>';
+    r.ng.forEach(n => { h += '<div class="fb ng" style="margin-top:6px"><b>×</b> ' + rb(n) + '</div>'; });
     h += '<div class="pt">💡 ' + esc(r.tip) + '</div></div>';
   });
   if (fromQ) h += '<button class="btn" id="bk2">問題にもどる</button>';
@@ -283,14 +285,14 @@ function review() {
     h += '<div class="card rv"><span class="badge ' + u.tag + '">' + u.tag + '</span><h2 style="display:inline">' + esc(label(u)) + '　' + rb(u.title) + '</h2>';
     h += '<div class="text" style="font-size:16px;line-height:1.9;margin:8px 0">' + bodyHtml(u) + '</div>';
     u.questions.forEach((q, i) => {
-      h += '<p style="margin:10px 0 2px"><span class="kind">' + esc(q.kind) + '</span>' + (i + 1) + '. ' + esc(q.q) + '</p>';
+      h += '<p style="margin:10px 0 2px"><span class="kind">' + esc(q.kind) + '</span>' + (i + 1) + '. ' + rb(q.q) + '</p>';
       if (q.hint) h += '<div class="hint">' + esc(q.hint) + '</div>';
       if (q.type === 'split') {
         h += q.parts.map((p, j) => '<div class="choice">' + (j ? '後半' : '前半') + '：' + esc(p) + '　→　' + (q.ok[j] ? '○' : '×') + '</div>').join('');
       } else if (q.type === 'tap') {
         h += '<div class="chips">' + q.chunks.map((c, j) => '<span class="chip' + (j === q.tapAns ? ' right' : '') + '">' + (j === q.tapAns ? '○ ' : '') + esc(c) + '</span>').join('') + '</div>';
       } else {
-        q.choices.forEach((c, j) => { h += '<div class="choice' + (j === q.ans ? ' right' : '') + '">' + (j === q.ans ? '○ ' : '') + esc(c) + '</div>'; });
+        q.choices.forEach((c, j) => { h += '<div class="choice' + (j === q.ans ? ' right' : '') + '">' + (j === q.ans ? '○ ' : '') + rb(c) + '</div>'; });
       }
       h += '<div class="sub">' + esc(q.exp) + '</div>';
       if (q.para && q.para.length) h += '<div class="para">💡 ' + q.para.map(p => '「' + esc(p[0]) + '」→「' + esc(p[1]) + '」').join('、') + '</div>';
@@ -305,7 +307,7 @@ function review() {
   window.scrollTo(0, 0);
 }
 
-Promise.all(["data/level0.json", "data/level1.json", "data/level2.json", "data/level3.json", "data/level8.json", "data/level6.json", "data/level4.json", "data/level5.json", "data/level7.json", "data/level9.json", "data/level10.json", "data/level11.json", "data/level12.json", "data/level13.json"].map(f => fetch(f).then(r => r.json())))
+Promise.all(["data/level0.json", "data/level1.json", "data/level2.json", "data/level3.json", "data/level8.json", "data/level6.json", "data/level4.json", "data/level5.json", "data/level7.json", "data/level9.json", "data/level10.json", "data/level11.json", "data/level12.json", "data/level13.json", "data/level14.json"].map(f => fetch(f).then(r => r.json())))
   .then(ls => { LEV = ls; RULES = ls[0].rules; DATA = LEV[cur]; home(); })
   .catch(() => { app.textContent = 'データを読みこめませんでした。'; });
 </script>
